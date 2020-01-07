@@ -15,10 +15,7 @@ func main() {
 		panic(err)
 	}
 	r := chi.NewRouter()
-	productDelivery := injector.InitializeProductDelivery()
-	r.Route("/product", func(r chi.Router) {
-		r.Post("/", productDelivery.HandleAddProduct)
-	})
-
+	shoppiesRouter := NewShoppiesRouter(r)
+	shoppiesRouter.BindProductDelivery(injector.InitializeProductDelivery())
 	http.ListenAndServe(config.Http.Address, r)
 }
