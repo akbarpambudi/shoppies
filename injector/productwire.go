@@ -11,14 +11,15 @@ import (
 )
 
 var (
-	productServiceSets = wire.NewSet(
+	productModuleSets = wire.NewSet(
 		productRepository.NewInMemoryProductRepository,
 		wire.Bind(new(product.ProductRepository), new(*productRepository.InMemoryProductRepository)),
 		productUseCase.NewProductUseCaseImpl,
 		wire.Bind(new(product.ProductUseCase), new(*productUseCase.ProductUseCaseImpl)),
+		productDeliveryHttp.NewProductHttpDelivery,
 	)
 )
 
 func InitializeProductDelivery() *productDeliveryHttp.ProductHttpDelivery {
-	panic(wire.Build(productDeliveryHttp.NewProductHttpDelivery, productServiceSets))
+	panic(wire.Build(productModuleSets))
 }

@@ -7,13 +7,21 @@ import (
 	"github.com/google/wire"
 )
 
-func InitializeAppConfigBinder() configuration.ConfigBinder {
-	panic(wire.Build(wire.Value(configuration.EnvironmentConfigBinderProperties{
+var (
+	configModuleSets = wire.NewSet(wire.Value(configuration.EnvironmentConfigBinderProperties{
 		FileName: "app-config",
 		Path:     "./env",
 	}),
-		configuration.NewEnvironmentConfigBinder,
-		wire.Bind(new(configuration.ConfigBinder),
-			new(*configuration.EnvironmentConfigBinder))),
-	)
+		provideAppConfig)
+)
+
+func provideAppConfig(properties configuration.EnvironmentConfigBinderProperties) (*configuration.AppConfig, error) {
+	environmentConfigBinder := configuration.NewEnvironmentConfigBinder(properties)
+	environmentConfigBinder.Bind()
+	return environmentConfigBinder.GetAppConfig()
+
+}
+
+func InitializeAppConfig() (*configuration.AppConfig, error) {
+	panic(wire.Build(configModuleSets))
 }

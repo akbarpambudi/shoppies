@@ -1,2 +1,5 @@
 http:
   address: ":8080"
+db:
+  connectionString: ""
+  dialect: "postgre"

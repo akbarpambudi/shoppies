@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/render v1.0.1 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/google/wire v0.4.0
+	github.com/jinzhu/gorm v1.9.12
 	github.com/labstack/gommon v0.3.0
 	github.com/spf13/viper v1.6.1
 )

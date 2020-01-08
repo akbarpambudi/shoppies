@@ -11,15 +11,28 @@ import (
 	"github.com/akbarpambudi/shoppies/product/delivery/http"
 	"github.com/akbarpambudi/shoppies/product/repository"
 	"github.com/akbarpambudi/shoppies/product/usecase"
+	"github.com/akbarpambudi/shoppies/router"
+	"github.com/go-chi/chi"
 	"github.com/google/wire"
 )
 
-// Injectors from configwire.go:
+// Injectors from appwire.go:
 
-func InitializeAppConfigBinder() configuration.ConfigBinder {
+func InitializeChiRouter() chi.Router {
+	mux := chi.NewRouter()
+	return mux
+}
+
+func InitializeShoppiesRouter() (*router.ShoppiesRouter, error) {
+	mux := chi.NewRouter()
 	environmentConfigBinderProperties := _wireEnvironmentConfigBinderPropertiesValue
-	environmentConfigBinder := configuration.NewEnvironmentConfigBinder(environmentConfigBinderProperties)
-	return environmentConfigBinder
+	appConfig, err := provideAppConfig(environmentConfigBinderProperties)
+	if err != nil {
+		return nil, err
+	}
+	httpConfig := appConfig.Http
+	shoppiesRouter := router.NewShoppiesRouter(mux, httpConfig)
+	return shoppiesRouter, nil
 }
 
 var (
@@ -28,6 +41,17 @@ var (
 		Path:     "./env",
 	}
 )
+
+// Injectors from configwire.go:
+
+func InitializeAppConfig() (*configuration.AppConfig, error) {
+	environmentConfigBinderProperties := _wireEnvironmentConfigBinderPropertiesValue
+	appConfig, err := provideAppConfig(environmentConfigBinderProperties)
+	if err != nil {
+		return nil, err
+	}
+	return appConfig, nil
+}
 
 // Injectors from productwire.go:
 
@@ -38,8 +62,30 @@ func InitializeProductDelivery() *http.ProductHttpDelivery {
 	return productHttpDelivery
 }
 
+// appwire.go:
+
+var (
+	appModuleSets = wire.NewSet(configModuleSets, wire.FieldsOf(new(*configuration.AppConfig), "Http"), chi.NewRouter, wire.Bind(new(chi.Router), new(*chi.Mux)), router.NewShoppiesRouter)
+)
+
+// configwire.go:
+
+var (
+	configModuleSets = wire.NewSet(wire.Value(configuration.EnvironmentConfigBinderProperties{
+		FileName: "app-config",
+		Path:     "./env",
+	}), provideAppConfig)
+)
+
+func provideAppConfig(properties configuration.EnvironmentConfigBinderProperties) (*configuration.AppConfig, error) {
+	environmentConfigBinder := configuration.NewEnvironmentConfigBinder(properties)
+	environmentConfigBinder.Bind()
+	return environmentConfigBinder.GetAppConfig()
+
+}
+
 // productwire.go:
 
 var (
-	productServiceSets = wire.NewSet(repository.NewInMemoryProductRepository, wire.Bind(new(product.ProductRepository), new(*repository.InMemoryProductRepository)), usecase.NewProductUseCaseImpl, wire.Bind(new(product.ProductUseCase), new(*usecase.ProductUseCaseImpl)))
+	productModuleSets = wire.NewSet(repository.NewInMemoryProductRepository, wire.Bind(new(product.ProductRepository), new(*repository.InMemoryProductRepository)), usecase.NewProductUseCaseImpl, wire.Bind(new(product.ProductUseCase), new(*usecase.ProductUseCaseImpl)), http.NewProductHttpDelivery)
 )
